@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 namespace Library1
 {
     class Book
@@ -109,6 +111,11 @@ namespace Library1
             }
             Console.Write("Введите ваш пароль: ");
             string password = Console.ReadLine();
+            SHA256 sha256 = SHA256.Create();
+            byte[] Bytes = Encoding.UTF8.GetBytes(password!);
+            byte[] Hash = sha256.ComputeHash(Bytes);
+            sha256.Dispose();
+            string PasswordHash = BitConverter.ToString(Hash).ToLower().Replace("-", "");
             if (string.IsNullOrWhiteSpace(password))
             {
                 Console.WriteLine("Пароль не может быть пустым!");
@@ -116,7 +123,7 @@ namespace Library1
             }
 
             Id = users.Count > 0 ? users.Max(u => u.Id) + 1 : 1;// неслыханная имба
-            User user = new User(Id, name, Convert.ToString(password));
+            User user = new User(Id, name, PasswordHash);
             users.Add(user);
             Console.WriteLine("Регистрация успешна!");
         }
@@ -126,13 +133,18 @@ namespace Library1
             string name = Console.ReadLine();
             Console.Write("Введите ваш пароль: ");
             string password = Console.ReadLine();
+            SHA256 sha256 = SHA256.Create();
+            byte[] Bytes = Encoding.UTF8.GetBytes(password!);
+            byte[] Hash = sha256.ComputeHash(Bytes);
+            sha256.Dispose();
+            string PasswordHash = BitConverter.ToString(Hash).ToLower().Replace("-", "");
             User element = users.FirstOrDefault(u => u.Name == name);
             if (element == null)
             {
                 Console.WriteLine("Пользователь с таким именем не найден.");
                 return false;
             }
-            if (password != element.Password)
+            if (PasswordHash != element.Password)
             {
                 Console.WriteLine("Пароль неверный!");
                 return false;

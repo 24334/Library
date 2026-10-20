@@ -1,27 +1,17 @@
 [
   {
-    "Id": 1,
-    "Name": "123",
-    "Password": "123"
+    "Id": 7,
+    "Name": "12345",
+    "Password": "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
   },
   {
-    "Id": 2,
-    "Name": "\u0430",
-    "Password": "1"
-  },
-  {
-    "Id": 3,
+    "Id": 8,
     "Name": "admin",
-    "Password": "admin"
+    "Password": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
   },
   {
-    "Id": 4,
-    "Name": "aa",
-    "Password": "123"
-  },
-  {
-    "Id": 5,
-    "Name": "\u0430\u0430",
-    "Password": "123"
+    "Id": 9,
+    "Name": "\u0412\u0430\u043A\u0430\u0442\u0438\u043A",
+    "Password": "5e7b571a60a7c187d6a4cb8bbedbe4e69d4caa49b51d9ddf3320afd793f146bf"
   }
 ]
