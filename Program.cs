@@ -23,24 +23,31 @@ namespace Library1
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public List<Book> BorrowedBooks { get; set; } = new List<Book>();
+        public string Password { get; set; }
 
-
-        public User(int id, string name)
+        public User(int id, string name, string password)
         {
             Id = id;
             Name = name;
+            Password = password;
         }
     }
     class LibraryManager
     {
         private List<Book> books = new List<Book>();
+        private List<User> users = new List<User>();
         private string filePath = "books_data.json";
+        private string UfilePath = "users_data.json";
         public void SaveData()
         {
             string jsonString = JsonSerializer.Serialize(books, new JsonSerializerOptions { WriteIndented = true });
 
             File.WriteAllText(filePath, jsonString);
+        }
+        public void USaveData()
+        {
+            string UjsongString = JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(UfilePath, UjsongString);
         }
         public void LoadData()
         {
@@ -52,17 +59,26 @@ namespace Library1
                 books = JsonSerializer.Deserialize<List<Book>>(jsonString);
             }
         }
-        private List<User> users = new List<User>();
+        public void ULoadDota()
+        {
+            if (File.Exists(UfilePath))
+            {
+                string UjsongString = File.ReadAllText(UfilePath);
+                users = JsonSerializer.Deserialize<List<User>>(UjsongString);
+            }
+        }
+
         public void AddBook() // добавить книгу, в целом изи
         {
             Console.WriteLine("Введите id книги:");
             int pID;
-            if (int.TryParse(Console.ReadLine(), out pID))
+            if (!int.TryParse(Console.ReadLine(), out pID))
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Произошла ошибка: ...");
                 Console.ResetColor();
                 Console.Clear();
+                return;
             }
             bool idExists = books.Any(b => b.Id == pID);
             if (idExists)
@@ -80,12 +96,50 @@ namespace Library1
             books.Add(book2);
             Console.WriteLine("Книга успешно добавлена");
         }
-        public void RegisterUser()// регистрация, хз нах нужна, в будущем сделаю что книгу может брать ток зареганный юзер
+        public void RegisterUser()
         {
-            Console.WriteLine("Введите ваш ID:");
-            int sID = Convert.ToInt32(Console.ReadLine());
+            int Id = 0;
             Console.WriteLine("Введите ваше имя:");
-            string sname = Console.ReadLine();
+            string name = Console.ReadLine();
+            bool NameExist = users.Any(b => b.Name == name);
+            if (NameExist)
+            {
+                Console.WriteLine("Пользователь уже существует");
+                return;
+            }
+            Console.WriteLine("Введите ваш пароль");
+            string password = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                Console.WriteLine("Пароль не может быть пустым!");
+                return;
+            }
+
+            Id = users.Count > 0 ? users.Max(u => u.Id) + 1 : 1;// неслыханная имба
+            User user = new User(Id, name, Convert.ToString(password));
+            users.Add(user);
+            Console.WriteLine("Регистрация успешна!");
+        }
+        public bool LoginUser()
+        {
+            Console.WriteLine("Введите ваше имя");
+            string name = Console.ReadLine();
+            Console.WriteLine("Введите ваш пароль:");
+            string password = Console.ReadLine();
+            User element = users.FirstOrDefault(u => u.Name == name);
+            if (element == null)
+            {
+                Console.WriteLine("Пользователь с таким именем не найден.");
+                return false;
+            }
+            if (password != element.Password)
+            {
+                Console.WriteLine("Пароль неверный!");
+                return false;
+            }
+            Console.WriteLine("Вход успешно выполнен!");
+            return true;
+
         }
         public void ShowAllBooks() // показать все книги, изи вобще 
         {
@@ -127,37 +181,64 @@ namespace Library1
         {
             LibraryManager manager = new LibraryManager();
             manager.LoadData();
-            while (true)
+            manager.ULoadDota();
+            int choice = -1;
+            bool isAuthenticated = false;
+            while (!isAuthenticated)
             {
                 Console.WriteLine("-------- Вас приветствует электронная библиотека --------");
-                Console.WriteLine("Выберите что хотите сделать");
-                Console.WriteLine("1 - Добавить книгу");
-                Console.WriteLine("2 - Посмотреть список всех книг");
-                Console.WriteLine("3 - Взять книгу");
-                Console.WriteLine("4 - Зарегестрироваться");
-                int choice = Convert.ToInt16(Console.ReadLine());
+                Console.WriteLine("Вам необходимо войти или зарегестрироваться");
+                Console.WriteLine("1 - Войти:");
+                Console.WriteLine("2 - Зарегестрироваться:");
+                Console.WriteLine("0 - Выход");
+                choice = Convert.ToInt32(Console.ReadLine());
+                Console.Clear();
                 switch (choice)
                 {
                     case 1:
-                        Console.Clear();
-                        manager.AddBook();
-                        manager.SaveData();
+                        isAuthenticated = manager.LoginUser();
                         break;
                     case 2:
-                        Console.Clear();
-                        manager.ShowAllBooks();
-                        break;
-                    case 3:
-                        Console.Clear();
-                        manager.ReadBook();
-                        manager.SaveData();
-                        break;
-                    case 4:
-                        Console.Clear();
                         manager.RegisterUser();
+                        manager.USaveData();
                         break;
                 }
             }
+               if (isAuthenticated)
+               {
+                while (choice != 0)
+                  {
+                    {
+                        Console.WriteLine("-------- Вас приветствует электронная библиотека --------");
+                        Console.WriteLine("Выберите что хотите сделать");
+                        Console.WriteLine("1 - Добавить книгу");
+                        Console.WriteLine("2 - Посмотреть список всех книг");
+                        Console.WriteLine("3 - Взять книгу");
+                        Console.WriteLine("0 - Выход");
+                        choice = Convert.ToInt32(Console.ReadLine());
+                        switch (choice)
+                        {
+                            case 1:
+                                Console.Clear();
+                                manager.AddBook();
+                                manager.SaveData();
+                                break;
+                            case 2:
+                                Console.Clear();
+                                manager.ShowAllBooks();
+                                break;
+                            case 3:
+                                Console.Clear();
+                                manager.ReadBook();
+                                manager.SaveData();
+                                break;
+                            case 0:
+                                Environment.Exit(choice);
+                                break;
+                        }
+                    }
+                }
+            }
+               }
         }
     }
-}
