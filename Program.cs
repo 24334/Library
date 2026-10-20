@@ -99,7 +99,7 @@ namespace Library1
         public void RegisterUser()
         {
             int Id = 0;
-            Console.WriteLine("Введите ваше имя:");
+            Console.Write("Введите ваше имя: ");
             string name = Console.ReadLine();
             bool NameExist = users.Any(b => b.Name == name);
             if (NameExist)
@@ -107,7 +107,7 @@ namespace Library1
                 Console.WriteLine("Пользователь уже существует");
                 return;
             }
-            Console.WriteLine("Введите ваш пароль");
+            Console.Write("Введите ваш пароль: ");
             string password = Console.ReadLine();
             if (string.IsNullOrWhiteSpace(password))
             {
@@ -122,9 +122,9 @@ namespace Library1
         }
         public bool LoginUser()
         {
-            Console.WriteLine("Введите ваше имя");
+            Console.Write("Введите ваше имя: ");
             string name = Console.ReadLine();
-            Console.WriteLine("Введите ваш пароль:");
+            Console.Write("Введите ваш пароль: ");
             string password = Console.ReadLine();
             User element = users.FirstOrDefault(u => u.Name == name);
             if (element == null)
@@ -155,7 +155,7 @@ namespace Library1
         }
         public void ReadBook()// взять книгу, в будущем добавлю пару фич
         {
-            Console.WriteLine("Введите ID книги, которую хотите почитать:");
+            Console.Write("Введите ID книги, которую хотите почитать: ");
             int bookID = Convert.ToInt32(Console.ReadLine());
 
             Book foundbook = books.FirstOrDefault(b => b.Id == bookID);
@@ -188,8 +188,8 @@ namespace Library1
             {
                 Console.WriteLine("-------- Вас приветствует электронная библиотека --------");
                 Console.WriteLine("Вам необходимо войти или зарегестрироваться");
-                Console.WriteLine("1 - Войти:");
-                Console.WriteLine("2 - Зарегестрироваться:");
+                Console.WriteLine("1 - Войти");
+                Console.WriteLine("2 - Зарегестрироваться");
                 Console.WriteLine("0 - Выход");
                 choice = Convert.ToInt32(Console.ReadLine());
                 Console.Clear();
@@ -216,19 +216,18 @@ namespace Library1
                         Console.WriteLine("3 - Взять книгу");
                         Console.WriteLine("0 - Выход");
                         choice = Convert.ToInt32(Console.ReadLine());
+                        Console.Clear();
                         switch (choice)
                         {
                             case 1:
-                                Console.Clear();
                                 manager.AddBook();
                                 manager.SaveData();
                                 break;
                             case 2:
-                                Console.Clear();
                                 manager.ShowAllBooks();
                                 break;
                             case 3:
-                                Console.Clear();
+                                manager.ShowAllBooks();
                                 manager.ReadBook();
                                 manager.SaveData();
                                 break;
