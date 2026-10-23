@@ -46,6 +46,15 @@ namespace Library1
 
             File.WriteAllText(filePath, jsonString);
         }
+        public static void Error(string ErrorMessage)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("\nОшибка! ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(ErrorMessage);
+            Console.Write("\nНажмите Enter для продолжения...");
+            Console.ReadKey();
+        }
         public void USaveData()
         {
             string UjsongString = JsonSerializer.Serialize(users, new JsonSerializerOptions { WriteIndented = true });
@@ -69,32 +78,37 @@ namespace Library1
                 users = JsonSerializer.Deserialize<List<User>>(UjsongString);
             }
         }
+        public static int ReadInt(string prompt)
+        {
+            while (true)
+            {
+                Console.Write(prompt);
+                if (int.TryParse(Console.ReadLine(), out int result))
+                    return result;
 
+                Console.WriteLine("Нужно ввести целое число, попробуй ещё раз.");
+            }
+        }
+
+        private static string HashPassword(string password)
+        {
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(password)));
+        }
         public void AddBook() // добавить книгу, в целом изи
         {
-            Console.WriteLine("Введите id книги:");
-            int pID;
-            if (!int.TryParse(Console.ReadLine(), out pID))
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Произошла ошибка: ...");
-                Console.ResetColor();
-                Console.Clear();
-                return;
-            }
-            bool idExists = books.Any(b => b.Id == pID);
-            if (idExists)
-            {
-                Console.WriteLine("Ошибка: книга с таким ID уже существует в библиотеке");
-                return;
-            }
+            int id = 0; 
             Console.WriteLine("Введите название книги:");
             string Ptitle = Console.ReadLine();
             Console.WriteLine("Введите автора книги:");
             string pAuthor = Console.ReadLine();
             Console.WriteLine("Введите год выпуска:");
-            int pYear = Convert.ToInt32(Console.ReadLine());
-            Book book2 = new Book(pID, Ptitle, pAuthor, pYear);
+            if (!int.TryParse(Console.ReadLine(), out  int Year) || Year > DateTime.Now.Year)
+            {
+                Console.WriteLine("Ошибка, используйте цифры и настоящий год");
+                return;
+            } 
+            id = books.Count > 0 ? books.Max(u => u.Id) + 1 : 1; 
+            Book book2 = new Book(id, Ptitle, pAuthor, Year);
             books.Add(book2);
             Console.WriteLine("Книга успешно добавлена");
         }
@@ -106,24 +120,19 @@ namespace Library1
             bool NameExist = users.Any(b => b.Name == name);
             if (NameExist)
             {
-                Console.WriteLine("Пользователь уже существует");
+                Error("Пользователь уже существует");
                 return;
             }
             Console.Write("Введите ваш пароль: ");
             string password = Console.ReadLine();
-            SHA256 sha256 = SHA256.Create();
-            byte[] Bytes = Encoding.UTF8.GetBytes(password!);
-            byte[] Hash = sha256.ComputeHash(Bytes);
-            sha256.Dispose();
-            string PasswordHash = BitConverter.ToString(Hash).ToLower().Replace("-", "");
             if (string.IsNullOrWhiteSpace(password))
             {
-                Console.WriteLine("Пароль не может быть пустым!");
+                Error("Пароль не может быть пустым!");
                 return;
             }
-
-            Id = users.Count > 0 ? users.Max(u => u.Id) + 1 : 1;// неслыханная имба
-            User user = new User(Id, name, PasswordHash);
+            string passwordHash = HashPassword(password);
+            Id = users.Count > 0 ? users.Max(u => u.Id) + 1 : 1;
+            User user = new User(Id, name, passwordHash);
             users.Add(user);
             Console.WriteLine("Регистрация успешна!");
         }
@@ -133,20 +142,16 @@ namespace Library1
             string name = Console.ReadLine();
             Console.Write("Введите ваш пароль: ");
             string password = Console.ReadLine();
-            SHA256 sha256 = SHA256.Create();
-            byte[] Bytes = Encoding.UTF8.GetBytes(password!);
-            byte[] Hash = sha256.ComputeHash(Bytes);
-            sha256.Dispose();
-            string PasswordHash = BitConverter.ToString(Hash).ToLower().Replace("-", "");
+            string passwordHash = HashPassword(password);
             User element = users.FirstOrDefault(u => u.Name == name);
             if (element == null)
             {
-                Console.WriteLine("Пользователь с таким именем не найден.");
+                Error("Пользователь с таким именем не найден.");
                 return false;
             }
-            if (PasswordHash != element.Password)
+            if (passwordHash != element.Password)
             {
-                Console.WriteLine("Пароль неверный!");
+                Error("Пароль неверный");
                 return false;
             }
             Console.WriteLine("Вход успешно выполнен!");
@@ -155,6 +160,7 @@ namespace Library1
         }
         public void ShowAllBooks() // показать все книги, изи вобще 
         {
+            
             foreach (Book element in books)
             {
                 Console.WriteLine($"Id книги: {element.Id}");
@@ -168,23 +174,19 @@ namespace Library1
         public void ReadBook()// взять книгу, в будущем добавлю пару фич
         {
             Console.Write("Введите ID книги, которую хотите почитать: ");
-            int bookID = Convert.ToInt32(Console.ReadLine());
+            int bookID = ReadInt("Введите ID книги которую хотите почитать");
 
             Book foundbook = books.FirstOrDefault(b => b.Id == bookID);
 
             if (foundbook == null)
             {
-                Console.WriteLine("Такой книги не найдено.");
+                Error("Такой книги не найдено");
             }
             else
             {
                 foundbook.ViewsCount++;
                 Console.WriteLine($"Вы открыли книгу '{foundbook.Title}'. Приятного чтения!");
             }
-        }
-        public void ReturnBook()
-        {
-
         }
     }
     internal class Program
@@ -203,7 +205,7 @@ namespace Library1
                 Console.WriteLine("1 - Войти");
                 Console.WriteLine("2 - Зарегестрироваться");
                 Console.WriteLine("0 - Выход");
-                choice = Convert.ToInt32(Console.ReadLine());
+                choice = LibraryManager.ReadInt("Ваш выбор: ");
                 Console.Clear();
                 switch (choice)
                 {
@@ -213,6 +215,9 @@ namespace Library1
                     case 2:
                         manager.RegisterUser();
                         manager.USaveData();
+                        break;
+                    case 0:
+                        Environment.Exit(choice);
                         break;
                 }
             }
@@ -227,7 +232,7 @@ namespace Library1
                         Console.WriteLine("2 - Посмотреть список всех книг");
                         Console.WriteLine("3 - Взять книгу");
                         Console.WriteLine("0 - Выход");
-                        choice = Convert.ToInt32(Console.ReadLine());
+                        choice = LibraryManager.ReadInt("Ваш выбор: ");
                         Console.Clear();
                         switch (choice)
                         {
@@ -251,5 +256,5 @@ namespace Library1
                 }
             }
                }
-        }
+    }
     }
