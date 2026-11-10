@@ -134,7 +134,6 @@ namespace Library1
                 Error("Пользователь уже существует");
                 return;
             }
-            Console.Write("Введите ваш пароль: ");
             string password = AnsiConsole.Prompt(new TextPrompt<string>("Введите пароль:").Secret());
             password = password.Trim(Convert.ToChar(" "));
             if (string.IsNullOrWhiteSpace(password))
