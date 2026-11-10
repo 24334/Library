@@ -1,6 +1,8 @@
-﻿using System.Security.Cryptography;
+﻿using System.Linq.Expressions;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Spectre.Console;
 namespace Library1
 {
     class Book
@@ -48,9 +50,7 @@ namespace Library1
         }
         public static void Error(string ErrorMessage)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write("\nОшибка! ");
-            Console.ForegroundColor = ConsoleColor.White;
+            AnsiConsole.MarkupLine("[red]Ошибка![/] ");
             Console.WriteLine(ErrorMessage);
             Console.Write("\nНажмите Enter для продолжения...");
             Console.ReadKey();
@@ -64,18 +64,28 @@ namespace Library1
         {
             if (File.Exists(filePath))
             {
-
-                string jsonString = File.ReadAllText(filePath);
-
-                books = JsonSerializer.Deserialize<List<Book>>(jsonString);
+                try
+                {
+                    books = JsonSerializer.Deserialize<List<Book>>(File.ReadAllText(filePath)) ?? new List<Book>();
+                }
+                catch (JsonException)
+                {
+                    books = new List<Book>();
+                }
             }
         }
         public void ULoadDota()
         {
             if (File.Exists(UfilePath))
             {
-                string UjsongString = File.ReadAllText(UfilePath);
-                users = JsonSerializer.Deserialize<List<User>>(UjsongString);
+                try
+                {
+                    users = JsonSerializer.Deserialize<List<User>>(File.ReadAllText(UfilePath)) ?? new List<User>();
+                }
+                catch (JsonException)
+                {
+                    users = new List<User>();
+                }
             }
         }
         public static int ReadInt(string prompt)
@@ -90,33 +100,34 @@ namespace Library1
             }
         }
 
-        private static string HashPassword(string password)
+        private static string HashPassword(string password) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(password)));
+
+        public void AddBook()
         {
-            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(password)));
-        }
-        public void AddBook() // добавить книгу, в целом изи
-        {
-            int id = 0; 
-            Console.WriteLine("Введите название книги:");
+            int id = 0;
+            Console.Write("Введите название книги: ");
             string Ptitle = Console.ReadLine();
-            Console.WriteLine("Введите автора книги:");
+            Console.Write("Введите автора книги: ");
             string pAuthor = Console.ReadLine();
-            Console.WriteLine("Введите год выпуска:");
-            if (!int.TryParse(Console.ReadLine(), out  int Year) || Year > DateTime.Now.Year)
+            Console.Write("Введите год выпуска: ");
+            if (!int.TryParse(Console.ReadLine(), out int Year) || Year > DateTime.Now.Year)
             {
                 Console.WriteLine("Ошибка, используйте цифры и настоящий год");
                 return;
-            } 
-            id = books.Count > 0 ? books.Max(u => u.Id) + 1 : 1; 
+            }
+            id = books.Count > 0 ? books.Max(u => u.Id) + 1 : 1;
             Book book2 = new Book(id, Ptitle, pAuthor, Year);
             books.Add(book2);
-            Console.WriteLine("Книга успешно добавлена");
+            Console.Write("Книга успешно добавлена. Нажмите Enter для продолжения...");
+            Console.ReadKey();
+            Console.Clear();
         }
         public void RegisterUser()
         {
             int Id = 0;
             Console.Write("Введите ваше имя: ");
             string name = Console.ReadLine();
+            name = name.Trim(Convert.ToChar(" "));
             bool NameExist = users.Any(b => b.Name == name);
             if (NameExist)
             {
@@ -124,7 +135,8 @@ namespace Library1
                 return;
             }
             Console.Write("Введите ваш пароль: ");
-            string password = Console.ReadLine();
+            string password = AnsiConsole.Prompt(new TextPrompt<string>("Введите пароль:").Secret());
+            password = password.Trim(Convert.ToChar(" "));
             if (string.IsNullOrWhiteSpace(password))
             {
                 Error("Пароль не может быть пустым!");
@@ -134,14 +146,16 @@ namespace Library1
             Id = users.Count > 0 ? users.Max(u => u.Id) + 1 : 1;
             User user = new User(Id, name, passwordHash);
             users.Add(user);
-            Console.WriteLine("Регистрация успешна!");
+            Console.Write("Регистрация успешна! Нажмите Enter для продолжения...");
+            Console.ReadKey();
         }
         public bool LoginUser()
         {
             Console.Write("Введите ваше имя: ");
             string name = Console.ReadLine();
-            Console.Write("Введите ваш пароль: ");
-            string password = Console.ReadLine();
+            name = name.Trim(Convert.ToChar(" "));
+            string password = AnsiConsole.Prompt(new TextPrompt<string>("Введите пароль:").Secret());
+            password = password.Trim(Convert.ToChar(" "));
             string passwordHash = HashPassword(password);
             User element = users.FirstOrDefault(u => u.Name == name);
             if (element == null)
@@ -154,26 +168,32 @@ namespace Library1
                 Error("Пароль неверный");
                 return false;
             }
-            Console.WriteLine("Вход успешно выполнен!");
+            Console.Write("Вход успешно выполнен! Нажмите Enter для продолжения...");
+            Console.ReadKey();
+            Console.Clear();
             return true;
 
         }
-        public void ShowAllBooks() // показать все книги, изи вобще 
+        public void ShowAllBooks()
         {
-            
+            var table = new Table();
+            table.AddColumn("Id книги");
+            table.AddColumn("Название");
+            table.AddColumn("Автор");
+            table.AddColumn("Год");
+            table.AddColumn("Популярность");
             foreach (Book element in books)
             {
-                Console.WriteLine($"Id книги: {element.Id}");
-                Console.WriteLine($"Название: {element.Title}");
-                Console.WriteLine($"Автор: {element.Author}");
-                Console.WriteLine($"Год: {element.Year}");
-                Console.WriteLine($"Популярность: {element.ViewsCount}");
-                Console.WriteLine();
+                table.AddRow(Convert.ToString(element.Id), 
+                    element.Title, 
+                    element.Author, 
+                    element.Year.ToString(), 
+                    element.ViewsCount.ToString());
             }
+            AnsiConsole.Write(table);
         }
-        public void ReadBook()// взять книгу, в будущем добавлю пару фич
+        public void ReadBook()
         {
-            Console.Write("Введите ID книги, которую хотите почитать: ");
             int bookID = ReadInt("Введите ID книги которую хотите почитать");
 
             Book foundbook = books.FirstOrDefault(b => b.Id == bookID);
@@ -196,65 +216,57 @@ namespace Library1
             LibraryManager manager = new LibraryManager();
             manager.LoadData();
             manager.ULoadDota();
-            int choice = -1;
+            var choice = "";
             bool isAuthenticated = false;
             while (!isAuthenticated)
             {
-                Console.WriteLine("-------- Вас приветствует электронная библиотека --------");
-                Console.WriteLine("Вам необходимо войти или зарегестрироваться");
-                Console.WriteLine("1 - Войти");
-                Console.WriteLine("2 - Зарегестрироваться");
-                Console.WriteLine("0 - Выход");
-                choice = LibraryManager.ReadInt("Ваш выбор: ");
+                choice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Вам необходимо войти или зарегестрироваться")
+                    .AddChoices("Войти", "Зарегестрироваться", "Выйти"));
                 Console.Clear();
                 switch (choice)
                 {
-                    case 1:
+                    case "Войти":
                         isAuthenticated = manager.LoginUser();
                         break;
-                    case 2:
+                    case "Зарегестрироваться":
                         manager.RegisterUser();
                         manager.USaveData();
                         break;
-                    case 0:
-                        Environment.Exit(choice);
+                    case "Выйти":
+                        Environment.Exit(0);
                         break;
                 }
             }
-               if (isAuthenticated)
-               {
-                while (choice != 0)
-                  {
+                while (choice != "Выход")
+                {
                     {
-                        Console.WriteLine("-------- Вас приветствует электронная библиотека --------");
-                        Console.WriteLine("Выберите что хотите сделать");
-                        Console.WriteLine("1 - Добавить книгу");
-                        Console.WriteLine("2 - Посмотреть список всех книг");
-                        Console.WriteLine("3 - Взять книгу");
-                        Console.WriteLine("0 - Выход");
-                        choice = LibraryManager.ReadInt("Ваш выбор: ");
+                        AnsiConsole.MarkupLine($"[purple]--------Вас приветствует электронная библиотека--------[/]");
+                        choice = AnsiConsole.Prompt(
+                            new SelectionPrompt<string>()
+                            .AddChoices("Добавить книгу", "Посмотреть список всех книг", "Взять книгу", "Выход"));
                         Console.Clear();
                         switch (choice)
                         {
-                            case 1:
+                            case "Добавить книгу":
                                 manager.AddBook();
                                 manager.SaveData();
                                 break;
-                            case 2:
+                            case "Посмотреть список всех книг":
                                 manager.ShowAllBooks();
                                 break;
-                            case 3:
+                            case "Взять книгу":
                                 manager.ShowAllBooks();
                                 manager.ReadBook();
                                 manager.SaveData();
                                 break;
-                            case 0:
-                                Environment.Exit(choice);
+                            case "Выход":
+                                Environment.Exit(0);
                                 break;
                         }
                     }
                 }
             }
-               }
-    }
+        }
     }
